@@ -14,7 +14,13 @@ jobs:
       - name: Checkout Code with Submodules
         uses: actions/checkout@v4
         with:
-          submodules: 'recursive'
+          submodules: true # 检出主项目指针精准匹配的子模块 commit
+          fetch-depth: 0
+
+      - name: Update Submodules to Latest
+        run: |
+          git submodule update --init --recursive
+          git submodule foreach git pull origin master || true
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -25,15 +31,20 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.0' # 明确指定包含 Dart >= 3.10.0 的 Flutter SDK 版本
+          flutter-version: '3.47.0'
           channel: 'stable'
           cache: true
 
-      - name: Install Dependencies
+      - name: Install Plugin Dependencies
+        run: |
+          cd plugin/bujuan_music_api
+          flutter pub get
+          cd ../..
+
+      - name: Install Main Dependencies
         run: flutter pub get
 
       - name: Build APK
-        # 加上跳过 AGP/Gradle 版本校验的标志
         run: flutter build apk --release --android-skip-build-dependency-validation
 
       - name: Upload Android Artifact
@@ -49,7 +60,14 @@ jobs:
       - name: Checkout Code with Submodules
         uses: actions/checkout@v4
         with:
-          submodules: 'recursive'
+          submodules: true
+          fetch-depth: 0
+
+      - name: Update Submodules to Latest
+        shell: bash
+        run: |
+          git submodule update --init --recursive
+          git submodule foreach git pull origin master || true
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -61,7 +79,13 @@ jobs:
       - name: Enable Windows Desktop
         run: flutter config --enable-windows-desktop
 
-      - name: Install Dependencies
+      - name: Install Plugin Dependencies
+        run: |
+          cd plugin/bujuan_music_api
+          flutter pub get
+          cd ../..
+
+      - name: Install Main Dependencies
         run: flutter pub get
 
       - name: Build Windows
