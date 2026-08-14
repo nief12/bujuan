@@ -14,7 +14,7 @@ jobs:
       - name: Checkout Code with Submodules
         uses: actions/checkout@v4
         with:
-          submodules: 'recursive' # 确保完整拉取子模块及其依赖
+          submodules: 'recursive'
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -25,6 +25,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.24.x' # 锁定稳定的 Flutter 版本，避免最新 AGP/Gradle 插件冲突
           channel: 'stable'
           cache: true
 
@@ -32,7 +33,8 @@ jobs:
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --release
+        # 增加跳过 Gradle/AGP 版本强校验的参数
+        run: flutter build apk --release --android-skip-build-dependency-validation
 
       - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
@@ -52,6 +54,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.24.x'
           channel: 'stable'
           cache: true
 
