@@ -1,0 +1,45 @@
+name: Build Flutter Apps (Auto-sign with temp key)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # 允许你手动在 Actions 页面点击运行
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+      - run: flutter pub get
+
+      # 关键步骤：云端自动生成密钥并签名（无需本地执行）
+      - name: Generate temp keystore and sign APK
+        run: |
+          keytool -genkey -v -keystore temp.jks -keyalg RSA -keysize 2048 -validity 10000 -alias temp -storepass 123456 -keypass 123456 -dname "CN=Temp, OU=Temp, O=Temp, L=Temp, ST=Temp, C=US"
+          flutter build apk --release \
+            -Pandroid.injected.signing.store.file=$(pwd)/temp.jks \
+            -Pandroid.injected.signing.store.password=123456 \
+            -Pandroid.injected.signing.key.alias=temp \
+            -Pandroid.injected.signing.key.password=123456
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-signed-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+      - run: flutter pub get
+      - run: flutter build windows --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-app
+          path: build/windows/x64/runner/Release
