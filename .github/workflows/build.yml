@@ -1,4 +1,4 @@
-name: Build Flutter Apps (Auto-sign with temp key)
+name: Build Flutter Apps (Android + Windows)
 
 on:
   push:
@@ -6,38 +6,65 @@ on:
   workflow_dispatch:
 
 jobs:
+  # ============ 安卓打包任务 ============
   build-android:
     runs-on: ubuntu-latest
     steps:
+      # 1. 检出代码
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.22.4'   # 明确指定具体稳定版本，避免探测失败
+
+      # 2. 手动安装 Flutter（指定版本 3.22.4，可自行更换）
+      - name: Setup Flutter
+        run: |
+          git clone https://github.com/flutter/flutter.git --depth 1 -b 3.22.4 $HOME/flutter
+          echo "$HOME/flutter/bin" >> $GITHUB_PATH
+          $HOME/flutter/bin/flutter --version
+
+      # 3. 安装项目依赖
       - run: flutter pub get
 
-      - name: Generate temp keystore and sign APK
+      # 4. 自动生成临时密钥库 + 打包签名 APK
+      - name: Build signed APK with temp keystore
         run: |
-          keytool -genkey -v -keystore temp.jks -keyalg RSA -keysize 2048 -validity 10000 -alias temp -storepass 123456 -keypass 123456 -dname "CN=Temp, OU=Temp, O=Temp, L=Temp, ST=Temp, C=US"
+          keytool -genkey -v -keystore temp.jks \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias temp \
+            -storepass 123456 -keypass 123456 \
+            -dname "CN=Temp, OU=Temp, O=Temp, L=Temp, ST=Temp, C=US"
           flutter build apk --release \
             -Pandroid.injected.signing.store.file=$(pwd)/temp.jks \
             -Pandroid.injected.signing.store.password=123456 \
             -Pandroid.injected.signing.key.alias=temp \
             -Pandroid.injected.signing.key.password=123456
 
+      # 5. 上传 APK 作为构建产物
       - uses: actions/upload-artifact@v4
         with:
           name: android-signed-apk
           path: build/app/outputs/flutter-apk/app-release.apk
 
+  # ============ Windows 打包任务 ============
   build-windows:
     runs-on: windows-latest
     steps:
+      # 1. 检出代码
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.22.4'   # Windows 也指定同一版本
+
+      # 2. 手动安装 Flutter（Windows 版）
+      - name: Setup Flutter
+        run: |
+          git clone https://github.com/flutter/flutter.git --depth 1 -b 3.22.4 $env:HOME/flutter
+          echo "$env:HOME/flutter/bin" >> $env:GITHUB_PATH
+          $env:HOME/flutter/bin/flutter --version
+        shell: pwsh
+
+      # 3. 安装项目依赖
       - run: flutter pub get
+
+      # 4. 打包 Windows 应用
       - run: flutter build windows --release
+
+      # 5. 上传 Windows 应用文件夹作为构建产物
       - uses: actions/upload-artifact@v4
         with:
           name: windows-app
