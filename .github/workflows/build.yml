@@ -14,13 +14,16 @@ jobs:
       - name: Checkout Code with Submodules
         uses: actions/checkout@v4
         with:
-          submodules: true # 检出主项目指针精准匹配的子模块 commit
-          fetch-depth: 0
+          submodules: 'recursive'
 
-      - name: Update Submodules to Latest
+      - name: Patch Code Issues (修补原仓库代码不兼容问题)
         run: |
-          git submodule update --init --recursive
-          git submodule foreach git pull origin master || true
+          # 1. 替换引用的 entity 文件名
+          sed -i 's/recommend_new_song_entity.dart/recommend_song_entity.dart/g' lib/pages/home/provider.dart
+          # 2. 替换调用的 API 方法名
+          sed -i 's/recommendNewSong/recommendSongs/g' lib/pages/home/provider.dart
+          # 3. 替换实体类型名称
+          sed -i 's/RecommendNewSongEntity/RecommendSongEntity/g' lib/pages/home/provider.dart
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -45,7 +48,8 @@ jobs:
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --release --android-skip-build-dependency-validation
+        # 使用 --no-tree-shake-icons 避免矢量图标缺失导致的构建报错
+        run: flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
 
       - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
@@ -60,14 +64,14 @@ jobs:
       - name: Checkout Code with Submodules
         uses: actions/checkout@v4
         with:
-          submodules: true
-          fetch-depth: 0
+          submodules: 'recursive'
 
-      - name: Update Submodules to Latest
+      - name: Patch Code Issues (修补原仓库代码不兼容问题)
         shell: bash
         run: |
-          git submodule update --init --recursive
-          git submodule foreach git pull origin master || true
+          sed -i 's/recommend_new_song_entity.dart/recommend_song_entity.dart/g' lib/pages/home/provider.dart
+          sed -i 's/recommendNewSong/recommendSongs/g' lib/pages/home/provider.dart
+          sed -i 's/RecommendNewSongEntity/RecommendSongEntity/g' lib/pages/home/provider.dart
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
