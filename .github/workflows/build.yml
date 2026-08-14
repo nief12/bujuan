@@ -25,7 +25,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.x' # 锁定稳定的 Flutter 版本，避免最新 AGP/Gradle 插件冲突
+          flutter-version: '3.29.x' # 升级 Flutter 版本以支持 Dart SDK >= 3.10.0
           channel: 'stable'
           cache: true
 
@@ -33,7 +33,7 @@ jobs:
         run: flutter pub get
 
       - name: Build APK
-        # 增加跳过 Gradle/AGP 版本强校验的参数
+        # 跳过 AGP/Gradle 插件版本的强校验
         run: flutter build apk --release --android-skip-build-dependency-validation
 
       - name: Upload Android Artifact
@@ -54,7 +54,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.x'
+          flutter-version: '3.29.x'
           channel: 'stable'
           cache: true
 
