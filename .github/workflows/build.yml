@@ -1,29 +1,28 @@
-name: Build Android and Windows
+name: Build Release Apps
 
 on:
   push:
-    branches: [ main, master ]
     tags:
       - 'v*'
-  workflow_dispatch: # 支持手动触发打包
+  workflow_dispatch:
 
 jobs:
-  # -------------------------------------------------------------
-  # 1. 打包 Android APK
-  # -------------------------------------------------------------
+  # ---------------- Step 1: 打包 Android (APK) ----------------
   build-android:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive # 关键：递归拉取 plugin/bujuan_music_api 子模块
 
-      - name: Set up Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: 'zulu'
           java-version: '17'
 
-      - name: Set up Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
@@ -35,44 +34,68 @@ jobs:
       - name: Build APK
         run: flutter build apk --release
 
-      - name: Upload Android APK
+      - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bujuan-android-apk
+          name: bujuan-android-release
           path: build/app/outputs/flutter-apk/app-release.apk
 
-  # -------------------------------------------------------------
-  # 2. 打包 Windows 10/11 桌面客户端
-  # -------------------------------------------------------------
+  # ---------------- Step 2: 打包 Windows (EXE/Zip) ----------------
   build-windows:
     runs-on: windows-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive # 关键：递归拉取 plugin/bujuan_music_api 子模块
 
-      - name: Set up Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
-      - name: Enable Windows Desktop Support
+      - name: Enable Windows Desktop
         run: flutter config --enable-windows-desktop
 
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Build Windows Executable
+      - name: Build Windows
         run: flutter build windows --release
 
-      # 压缩 Windows 产物文件夹以便下载
       - name: Compress Windows Build
-        shell: pwsh
+        shell: powershell
         run: |
-          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "bujuan-windows-x64.zip"
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath bujuan-windows-x64.zip
 
-      - name: Upload Windows Bundle
+      - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bujuan-windows-x64
+          name: bujuan-windows-release
           path: bujuan-windows-x64.zip
+
+  # ---------------- Step 3: 自动发布到 Releases (可选) ----------------
+  create-release:
+    needs: [build-android, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download Android Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bujuan-android-release
+
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bujuan-windows-release
+
+      - name: Release to GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            app-release.apk
+            bujuan-windows-x64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
