@@ -13,8 +13,11 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          submodules: recursive # 关键：递归拉取 plugin/bujuan_music_api 子模块
+
+      - name: Fix Submodule Config
+        run: |
+          git submodule init || true
+          git submodule update --remote --recursive || true
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -46,8 +49,12 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          submodules: recursive # 关键：递归拉取 plugin/bujuan_music_api 子模块
+
+      - name: Fix Submodule Config
+        shell: bash
+        run: |
+          git submodule init || true
+          git submodule update --remote --recursive || true
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -75,7 +82,7 @@ jobs:
           name: bujuan-windows-release
           path: bujuan-windows-x64.zip
 
-  # ---------------- Step 3: 自动发布到 Releases (可选) ----------------
+  # ---------------- Step 3: 自动发布到 Releases (推送 Tag 时执行) ----------------
   create-release:
     needs: [build-android, build-windows]
     runs-on: ubuntu-latest
