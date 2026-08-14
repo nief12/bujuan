@@ -11,13 +11,10 @@ jobs:
   build-android:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout Code with Submodules
         uses: actions/checkout@v4
-
-      - name: Fix Submodule Config
-        run: |
-          git submodule init || true
-          git submodule update --remote --recursive || true
+        with:
+          submodules: 'recursive' # 确保完整拉取子模块及其依赖
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -47,14 +44,10 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout Code with Submodules
         uses: actions/checkout@v4
-
-      - name: Fix Submodule Config
-        shell: bash
-        run: |
-          git submodule init || true
-          git submodule update --remote --recursive || true
+        with:
+          submodules: 'recursive'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
